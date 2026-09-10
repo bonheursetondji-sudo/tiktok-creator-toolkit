@@ -239,3 +239,5 @@ prisma/schema.prisma      # Profil, Video, IdeeContenu, ChecklistBadge
   l'agrégation et l'affichage.
 - Tests automatisés sur `src/lib/eligibility.ts` et
   `src/lib/monetization.ts` (logique pure, faciles à tester unitairement).
+ 
+ 
