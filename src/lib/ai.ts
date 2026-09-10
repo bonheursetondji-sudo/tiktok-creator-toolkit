@@ -41,7 +41,11 @@ function extractJsonArray(raw: string): unknown {
 
 async function generateWithAnthropic(niche: string, nombreIdees: number): Promise<IdeeGeneree[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) throw new Error("ANTHROPIC_API_KEY manquant dans .env.");
+  if (!apiKey) {
+    throw new Error(
+      `ANTHROPIC_API_KEY manquant dans .env. [debug: AI_PROVIDER="${process.env.AI_PROVIDER}", OPENAI_API_KEY présent=${Boolean(process.env.OPENAI_API_KEY)}]`
+    );
+  }
   const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
@@ -74,9 +78,6 @@ async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<I
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY manquant dans .env.");
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-  // Permet de pointer vers n'importe quel endpoint compatible OpenAI (ex.
-  // Gemini : https://generativelanguage.googleapis.com/v1beta/openai/chat/completions)
-  // sans dupliquer cette fonction — seule la clé, le modèle et cette URL changent.
   const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions";
 
   const res = await fetch(baseUrl, {
