@@ -7,6 +7,12 @@
  * ANTHROPIC_MODEL / OPENAI_MODEL car ces identifiants évoluent ; vérifiez
  * les valeurs courantes sur https://docs.claude.com/en/docs/about-claude/models
  * ou https://platform.openai.com/docs/models avant de déployer.
+ *
+ * Gemini (Google AI Studio) fonctionne aussi, via sa couche de
+ * compatibilité OpenAI : AI_PROVIDER="openai", OPENAI_API_KEY=<clé Gemini>,
+ * OPENAI_MODEL="gemini-3.8-flash" (ou autre modèle Gemini), et
+ * OPENAI_BASE_URL="https://generativelanguage.googleapis.com/v1beta/openai/chat/completions".
+ * Voir https://ai.google.dev/gemini-api/docs/openai pour les détails.
  */
 
 export interface IdeeGeneree {
@@ -68,8 +74,12 @@ async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<I
   const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) throw new Error("OPENAI_API_KEY manquant dans .env.");
   const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
+  // Permet de pointer vers n'importe quel endpoint compatible OpenAI (ex.
+  // Gemini : https://generativelanguage.googleapis.com/v1beta/openai/chat/completions)
+  // sans dupliquer cette fonction — seule la clé, le modèle et cette URL changent.
+  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions";
 
-  const res = await fetch("https://api.openai.com/v1/chat/completions", {
+  const res = await fetch(baseUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
