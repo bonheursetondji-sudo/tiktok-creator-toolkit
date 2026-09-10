@@ -1,0 +1,92 @@
+// Schéma Prisma — TikTok Creator Toolkit
+// Usage mono-utilisateur : pas de table User/multi-comptes.
+// SQLite en local, migrable vers PostgreSQL plus tard (voir README).
+
+// SQLite en local ne convient pas à Vercel (système de fichiers éphémère
+// sur les fonctions serverless) : ce schéma cible Postgres (ex. Neon),
+// avec une URL "pooled" pour l'app et une URL directe pour les migrations.
+// Pour l'auto-hébergement Docker + SQLite, voir la note dans le README —
+// il suffit de repasser provider = "sqlite" et de retirer directUrl.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// --- 4.1 / 7 — Profil TikTok synchronisé via OAuth ---------------------
+model Profil {
+  id                Int      @id @default(autoincrement())
+  tiktokUserId      String   @unique
+  displayName       String?
+  accountType       String? // "PERSONAL" | "BUSINESS" | inconnu
+  followerCount     Int?
+  country           String? // code pays déclaré / déduit, à défaut saisi manuellement
+  // Jeton chiffré (AES-256-GCM, voir src/lib/crypto.ts) — jamais en clair.
+  accessTokenEnc    String?
+  refreshTokenEnc   String?
+  tokenExpiresAt    DateTime?
+  lastSyncAt        DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  videos            Video[]
+}
+
+// --- 4.4 / 7 — Vidéo et statut de monétisabilité calculé ---------------
+model Video {
+  id                    Int      @id @default(autoincrement())
+  tiktokVideoId         String?  @unique // null si saisie manuelle (pas de connexion 4.1)
+  titre                 String?
+  dureeSecondes         Int?
+  vues                  Int?
+  datePublication       DateTime?
+
+  // Champs déclaratifs (cases à cocher) — jamais détectés automatiquement,
+  // voir section 2 du cahier des charges.
+  contenuOriginal       Boolean  @default(false)
+  pasDuoOuStitch        Boolean  @default(false)
+  pasModePhoto          Boolean  @default(false)
+  pasContenuSponsorise  Boolean  @default(false)
+  conformeReglesEtDroits Boolean @default(false)
+
+  // Verdict recalculé côté serveur à chaque mise à jour (src/lib/monetization.ts)
+  eligible              Boolean  @default(false)
+  raisonsBlocage        String? // JSON stringifié : string[]
+
+  profilId              Int?
+  profil                Profil?  @relation(fields: [profilId], references: [id])
+
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+}
+
+// --- 4.2 / 7 — Idées de contenu générées par IA -------------------------
+model IdeeContenu {
+  id           Int      @id @default(autoincrement())
+  niche        String
+  accroche     String
+  angle        String
+  format       String?
+  dureeSuggeree String?
+  statut       String   @default("proposee") // "proposee" | "gardee" | "utilisee"
+  createdAt    DateTime @default(now())
+}
+
+// --- 4.5 / 7 — Checklist de préparation au badge de vérification -------
+// Purement déclarative. Une seule ligne "courante" suffit pour un usage
+// mono-utilisateur, mais on garde un historique horodaté.
+model ChecklistBadge {
+  id                    Int      @id @default(autoincrement())
+  profilComplet         Boolean  @default(false)
+  activiteReguliere     Boolean  @default(false)
+  authenticite          Boolean  @default(false)
+  signalNotoriete       Boolean  @default(false)
+  absenceInfraction     Boolean  @default(false)
+  score                 Int      @default(0) // 0 à 5, recalculé côté serveur
+  createdAt             DateTime @default(now())
+}

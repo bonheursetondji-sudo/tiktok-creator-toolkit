@@ -1,0 +1,29 @@
+services:
+  # NB : ce compose assume prisma/schema.prisma en provider = "sqlite"
+  # (voir la section "Alternative — auto-hébergement Docker" du README).
+  # Le schéma livré par défaut cible Postgres pour le déploiement Vercel.
+  app:
+    build: .
+    ports:
+      - "3000:3000"
+    environment:
+      # Le fichier SQLite vit dans le volume nommé ci-dessous, pas dans
+      # l'image — il survit donc aux redéploiements et redémarrages.
+      DATABASE_URL: "file:/data/prod.db"
+      APP_PASSWORD: ${APP_PASSWORD}
+      APP_SECRET: ${APP_SECRET}
+      APP_API_KEY: ${APP_API_KEY}
+      TIKTOK_CLIENT_KEY: ${TIKTOK_CLIENT_KEY}
+      TIKTOK_CLIENT_SECRET: ${TIKTOK_CLIENT_SECRET}
+      TIKTOK_REDIRECT_URI: ${TIKTOK_REDIRECT_URI}
+      AI_PROVIDER: ${AI_PROVIDER}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY}
+      ANTHROPIC_MODEL: ${ANTHROPIC_MODEL}
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+      OPENAI_MODEL: ${OPENAI_MODEL}
+    volumes:
+      - tiktok_toolkit_data:/data
+    restart: unless-stopped
+
+volumes:
+  tiktok_toolkit_data:

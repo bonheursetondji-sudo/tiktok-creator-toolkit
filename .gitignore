@@ -1,0 +1,30 @@
+# Dépendances
+/node_modules
+
+# Next.js
+/.next/
+/out/
+
+# Build
+/build
+
+# Variables d'environnement (ne jamais committer)
+.env
+.env*.local
+
+# Base de données locale
+/prisma/dev.db
+/prisma/dev.db-journal
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Système
+.DS_Store
+*.pem
+
+# TypeScript
+*.tsbuildinfo
+next-env.d.ts
