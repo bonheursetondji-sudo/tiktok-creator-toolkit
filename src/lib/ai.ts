@@ -39,12 +39,32 @@ function extractJsonArray(raw: string): unknown {
   return JSON.parse(cleaned);
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+/**
+ * Réessaie automatiquement en cas de surcharge temporaire du fournisseur
+ * (503 "UNAVAILABLE" / 429 "rate limited") — fréquent sur les niveaux
+ * gratuits d'API, et transitoire par nature. 2 tentatives supplémentaires
+ * avec un court délai croissant avant d'abandonner.
+ */
+async function fetchWithRetry(url: string, init: RequestInit, maxRetries = 2): Promise<Response> {
+  let lastResponse: Response;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    lastResponse = await fetch(url, init);
+    if (lastResponse.status !== 503 && lastResponse.status !== 429) return lastResponse;
+    if (attempt < maxRetries) await sleep(1000 * (attempt + 1));
+  }
+  return lastResponse!;
+}
+
 async function generateWithAnthropic(niche: string, nombreIdees: number): Promise<IdeeGeneree[]> {
   const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
   if (!apiKey) throw new Error("ANTHROPIC_API_KEY manquant dans .env.");
   const model = (process.env.ANTHROPIC_MODEL || "claude-sonnet-5").trim();
 
-  const res = await fetch("https://api.anthropic.com/v1/messages", {
+  const res = await fetchWithRetry("https://api.anthropic.com/v1/messages", {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -74,9 +94,12 @@ async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<I
   const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error("OPENAI_API_KEY manquant dans .env.");
   const model = (process.env.OPENAI_MODEL || "gpt-4o-mini").trim();
+  // Permet de pointer vers n'importe quel endpoint compatible OpenAI (ex.
+  // Gemini : https://generativelanguage.googleapis.com/v1beta/openai/chat/completions)
+  // sans dupliquer cette fonction — seule la clé, le modèle et cette URL changent.
   const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions").trim();
 
-  const res = await fetch(baseUrl, {
+  const res = await fetchWithRetry(baseUrl, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
@@ -93,7 +116,8 @@ async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<I
 
   if (!res.ok) {
     const text = await res.text();
-    throw new Error(`Erreur API OpenAI (${res.status}) : ${text}`);
+    const provider = baseUrl.includes("googleapis.com") ? "Gemini" : "OpenAI";
+    throw new Error(`Erreur API ${provider} (${res.status}) : ${text}`);
   }
 
   const data = await res.json();
