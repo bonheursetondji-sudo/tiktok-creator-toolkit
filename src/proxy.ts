@@ -26,6 +26,15 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // Fichiers statiques de vérification à la racine (robots.txt, fichier de
+  // preuve de propriété TikTok, futur sitemap.xml...) — placés dans public/
+  // précisément pour être récupérables sans authentification, sinon les
+  // vérificateurs externes (TikTok, moteurs de recherche) reçoivent une
+  // redirection vers /login au lieu du contenu attendu.
+  if (/^\/[^/]+\.(txt|xml)$/i.test(pathname)) {
+    return NextResponse.next();
+  }
+
   // Rafraîchissement automatique quotidien (section 4.1) via Vercel Cron :
   // Vercel invoque cette route en GET avec un header Authorization signé
   // automatiquement à partir de CRON_SECRET (voir vercel.json + README).
