@@ -40,13 +40,9 @@ function extractJsonArray(raw: string): unknown {
 }
 
 async function generateWithAnthropic(niche: string, nombreIdees: number): Promise<IdeeGeneree[]> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    throw new Error(
-      `ANTHROPIC_API_KEY manquant dans .env. [debug: AI_PROVIDER="${process.env.AI_PROVIDER}", OPENAI_API_KEY présent=${Boolean(process.env.OPENAI_API_KEY)}]`
-    );
-  }
-  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-5";
+  const apiKey = process.env.ANTHROPIC_API_KEY?.trim();
+  if (!apiKey) throw new Error("ANTHROPIC_API_KEY manquant dans .env.");
+  const model = (process.env.ANTHROPIC_MODEL || "claude-sonnet-5").trim();
 
   const res = await fetch("https://api.anthropic.com/v1/messages", {
     method: "POST",
@@ -75,10 +71,10 @@ async function generateWithAnthropic(niche: string, nombreIdees: number): Promis
 }
 
 async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<IdeeGeneree[]> {
-  const apiKey = process.env.OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY?.trim();
   if (!apiKey) throw new Error("OPENAI_API_KEY manquant dans .env.");
-  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
-  const baseUrl = process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions";
+  const model = (process.env.OPENAI_MODEL || "gpt-4o-mini").trim();
+  const baseUrl = (process.env.OPENAI_BASE_URL || "https://api.openai.com/v1/chat/completions").trim();
 
   const res = await fetch(baseUrl, {
     method: "POST",
@@ -107,7 +103,7 @@ async function generateWithOpenAI(niche: string, nombreIdees: number): Promise<I
 }
 
 export async function generateIdeas(niche: string, nombreIdees = 9): Promise<IdeeGeneree[]> {
-  const provider = (process.env.AI_PROVIDER || "anthropic").toLowerCase();
+  const provider = (process.env.AI_PROVIDER || "anthropic").trim().toLowerCase();
   if (provider === "openai") return generateWithOpenAI(niche, nombreIdees);
   return generateWithAnthropic(niche, nombreIdees);
 }
