@@ -19,7 +19,7 @@ const TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/";
 const USERINFO_URL = "https://open.tiktokapis.com/v2/user/info/";
 const VIDEO_LIST_URL = "https://open.tiktokapis.com/v2/video/list/";
 
-export const TIKTOK_SCOPES = ["user.info.basic", "user.info.stats", "video.list"];
+export const TIKTOK_SCOPES = ["user.info.profile", "user.info.stats", "video.list"];
 
 function requireEnv(name: string): string {
   const value = process.env[name];
