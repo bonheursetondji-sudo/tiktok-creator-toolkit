@@ -8,7 +8,7 @@ import { SESSION_COOKIE, isSessionValid } from "@/lib/session";
 // node:crypto, which works fine under both, so nothing else needed to change.
 // (node:crypto is used below too, now that proxy.ts is Node.js-runtime.)
 
-const PUBLIC_PATHS = ["/login", "/api/auth/login"];
+const PUBLIC_PATHS = ["/login", "/api/auth/login", "/terms", "/privacy"];
 
 function timingSafeStringEqual(a: string, b: string): boolean {
   const aHash = crypto.createHash("sha256").update(a).digest();
