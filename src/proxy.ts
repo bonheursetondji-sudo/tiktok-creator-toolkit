@@ -6,8 +6,9 @@ import { SESSION_COOKIE, isSessionValid } from "@/lib/session";
 // runs before every request, gates access). It now runs on the Node.js
 // runtime rather than Edge — session.ts still uses Web Crypto rather than
 // node:crypto, which works fine under both, so nothing else needed to change.
-// (node:crypto is used below too, now that proxy.ts is Node.js-runtime.)
 
+// /setup n'est public que tant qu'aucun compte n'existe (première mise en
+// route) — la page elle-même se referme ensuite (voir /api/auth/login).
 const PUBLIC_PATHS = ["/login", "/api/auth/login", "/terms", "/privacy"];
 
 function timingSafeStringEqual(a: string, b: string): boolean {
@@ -26,11 +27,9 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Fichiers statiques de vérification à la racine (robots.txt, fichier de
-  // preuve de propriété TikTok, futur sitemap.xml...) — placés dans public/
-  // précisément pour être récupérables sans authentification, sinon les
-  // vérificateurs externes (TikTok, moteurs de recherche) reçoivent une
-  // redirection vers /login au lieu du contenu attendu.
+  // Fichiers statiques de vérification à la racine (robots.txt, fichiers
+  // de preuve de propriété TikTok, futur sitemap.xml...) — placés dans
+  // public/ précisément pour être récupérables sans authentification.
   if (/^\/[^/]+\.(txt|xml)$/i.test(pathname)) {
     return NextResponse.next();
   }
@@ -38,29 +37,13 @@ export async function proxy(request: NextRequest) {
   // Rafraîchissement automatique quotidien (section 4.1) via Vercel Cron :
   // Vercel invoque cette route en GET avec un header Authorization signé
   // automatiquement à partir de CRON_SECRET (voir vercel.json + README).
-  // Secret étroitement scopé à cette seule route — volontairement distinct
-  // de APP_API_KEY ci-dessous.
+  // La route elle-même boucle sur tous les utilisateurs (multi-compte).
   if (pathname === "/api/tiktok/sync" && request.method === "GET") {
     const authHeader = request.headers.get("authorization");
     const cronSecret = process.env.CRON_SECRET;
     if (cronSecret && authHeader && authHeader.startsWith("Bearer ")) {
       const provided = authHeader.slice("Bearer ".length);
       if (timingSafeStringEqual(provided, cronSecret)) {
-        return NextResponse.next();
-      }
-    }
-  }
-
-  // Accès programmatique (scripts, automatisations, Shortcuts, curl...) à
-  // n'importe quelle route /api/* via une clé API personnelle, en
-  // complément — pas en remplacement — du cookie de session utilisé par
-  // le navigateur. Voir .env.example / README pour la générer.
-  if (pathname.startsWith("/api/")) {
-    const apiKey = process.env.APP_API_KEY;
-    const authHeader = request.headers.get("authorization");
-    if (apiKey && authHeader && authHeader.startsWith("Bearer ")) {
-      const provided = authHeader.slice("Bearer ".length);
-      if (timingSafeStringEqual(provided, apiKey)) {
         return NextResponse.next();
       }
     }

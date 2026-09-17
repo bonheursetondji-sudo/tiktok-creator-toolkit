@@ -1,17 +1,24 @@
 import crypto from "node:crypto";
 
 /**
- * Vérification du mot de passe (section 6 : accès protégé même pour un
- * usage strictement personnel). Utilisé uniquement dans la route API de
- * login, qui tourne en Node runtime — jamais dans le middleware.
+ * Authentification multi-utilisateur : mot de passe individuel par
+ * compte, haché avec scrypt (module natif Node, pas de dépendance
+ * externe type bcrypt — plus simple à déployer sur Vercel).
+ * Format stocké : "<salt_hex>:<hash_hex>".
  */
-export function checkPassword(candidate: string): boolean {
-  const expected = process.env.APP_PASSWORD;
-  if (!expected) {
-    throw new Error("APP_PASSWORD manquant dans .env — voir .env.example.");
-  }
-  const a = crypto.createHash("sha256").update(candidate).digest();
-  const b = crypto.createHash("sha256").update(expected).digest();
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+
+export function hashPassword(password: string): string {
+  const salt = crypto.randomBytes(16);
+  const hash = crypto.scryptSync(password, salt, 64);
+  return `${salt.toString("hex")}:${hash.toString("hex")}`;
+}
+
+export function verifyPassword(password: string, stored: string): boolean {
+  const [saltHex, hashHex] = stored.split(":");
+  if (!saltHex || !hashHex) return false;
+  const salt = Buffer.from(saltHex, "hex");
+  const expected = Buffer.from(hashHex, "hex");
+  const actual = crypto.scryptSync(password, salt, 64);
+  if (actual.length !== expected.length) return false;
+  return crypto.timingSafeEqual(actual, expected);
 }

@@ -12,18 +12,19 @@ const NAV_ITEMS = [
   { href: "/badge", label: "Checklist badge" },
 ];
 
-export function Sidebar() {
+export function Sidebar({ userEmail, isAdmin }: { userEmail: string; isAdmin: boolean }) {
   const pathname = usePathname();
+  const items = isAdmin ? [...NAV_ITEMS, { href: "/admin", label: "Administration" }] : NAV_ITEMS;
 
   return (
     <aside className="flex h-full w-64 shrink-0 flex-col bg-ink text-white">
       <div className="px-5 py-6">
         <p className="font-display text-lg font-bold leading-tight">Creator Toolkit</p>
-        <p className="mt-0.5 text-xs text-white/50">Usage personnel</p>
+        <p className="mt-0.5 truncate text-xs text-white/50">{userEmail}</p>
       </div>
 
       <nav className="flex-1 space-y-0.5 px-3">
-        {NAV_ITEMS.map((item) => {
+        {items.map((item) => {
           const active = pathname === item.href;
           return (
             <Link

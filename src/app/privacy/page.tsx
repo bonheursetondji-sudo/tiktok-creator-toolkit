@@ -9,18 +9,20 @@ export default function PrivacyPage() {
 
         <div className="mt-8 space-y-6 text-sm leading-relaxed text-ink">
           <p>
-            TikTok Creator Toolkit est un outil strictement personnel, à usage individuel. Cette
-            page décrit quelles données sont traitées et comment, pour son unique utilisateur.
+            TikTok Creator Toolkit est un outil à usage restreint, réservé à un petit nombre de
+            personnes explicitement invitées. Cette page décrit quelles données sont traitées et
+            comment, pour chaque personne invitée — ses données ne sont jamais visibles des
+            autres personnes utilisant l&rsquo;outil.
           </p>
 
           <section>
             <h2 className="font-semibold">Données collectées via TikTok</h2>
             <p className="mt-1">
-              Après connexion OAuth volontaire de l&rsquo;utilisateur, l&rsquo;outil récupère
+              Après connexion OAuth volontaire de chaque personne invitée, l&rsquo;outil récupère
               uniquement des données publiques déjà associées à son propre compte TikTok : nom
               affiché, nombre d&rsquo;abonnés, liste de ses vidéos avec leurs métriques publiques
-              (durée, vues, date de publication). Aucune donnée d&rsquo;un autre utilisateur
-              TikTok n&rsquo;est collectée.
+              (durée, vues, date de publication). Aucune personne invitée n&rsquo;a accès aux
+              données d&rsquo;une autre.
             </p>
           </section>
 

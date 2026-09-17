@@ -1,10 +1,14 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { VideosList } from "@/components/VideosList";
 
 export const dynamic = "force-dynamic";
 
 export default async function VideosPage() {
-  const videos = await prisma.video.findMany({ orderBy: { createdAt: "desc" } });
+  const user = await getCurrentUser();
+  const videos = user
+    ? await prisma.video.findMany({ where: { userId: user.id }, orderBy: { createdAt: "desc" } })
+    : [];
 
   return (
     <div>

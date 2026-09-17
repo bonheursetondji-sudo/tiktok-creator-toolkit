@@ -1,10 +1,17 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { BadgeChecklist } from "@/components/BadgeChecklist";
 
 export const dynamic = "force-dynamic";
 
 export default async function BadgePage() {
-  const latest = await prisma.checklistBadge.findFirst({ orderBy: { createdAt: "desc" } });
+  const user = await getCurrentUser();
+  const latest = user
+    ? await prisma.checklistBadge.findFirst({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+      })
+    : null;
 
   return (
     <div>

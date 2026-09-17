@@ -1,9 +1,11 @@
 /**
  * Signature du cookie de session, en Web Crypto (SubtleCrypto) plutôt que
- * node:crypto : ce module est importé par middleware.ts, qui s'exécute en
- * Edge runtime et n'a pas accès aux modules natifs Node. Web Crypto est
+ * node:crypto : ce module est importé par proxy.ts. Web Crypto est
  * disponible à la fois côté Edge et côté Node 18+, donc une seule
  * implémentation suffit pour les deux contextes.
+ *
+ * Le cookie encode désormais l'identifiant de l'utilisateur connecté
+ * (multi-utilisateur), pas juste "connecté ou non".
  */
 
 const encoder = new TextEncoder();
@@ -51,18 +53,31 @@ export const SESSION_COOKIE = "tct_session";
 const SESSION_DURATION_MS = 30 * 24 * 60 * 60 * 1000; // 30 jours
 export const SESSION_MAX_AGE_SECONDS = SESSION_DURATION_MS / 1000;
 
-/** Construit la valeur signée à poser dans le cookie de session. */
-export async function createSessionValue(): Promise<string> {
+/** Construit la valeur signée à poser dans le cookie de session pour cet utilisateur. */
+export async function createSessionValue(userId: number): Promise<string> {
   const expiresAt = Date.now() + SESSION_DURATION_MS;
-  return sign(`ok:${expiresAt}`);
+  return sign(`u:${userId}:${expiresAt}`);
 }
 
-/** Vérifie la valeur du cookie de session (utilisé par le middleware). */
-export async function isSessionValid(cookieValue: string | undefined): Promise<boolean> {
-  if (!cookieValue) return false;
+/**
+ * Vérifie la valeur du cookie de session et retourne l'userId qu'il
+ * encode, ou null si absent/invalide/expiré. Utilisé par le middleware
+ * (juste pour savoir si "quelqu'un" est connecté, sans toucher la base)
+ * et par getCurrentUser() (qui, lui, va chercher l'utilisateur complet).
+ */
+export async function getSessionUserId(cookieValue: string | undefined): Promise<number | null> {
+  if (!cookieValue) return null;
   const unsigned = await unsign(cookieValue);
-  if (!unsigned || !unsigned.startsWith("ok:")) return false;
-  const expiresAt = Number(unsigned.slice(3));
-  if (!Number.isFinite(expiresAt)) return false;
-  return Date.now() < expiresAt;
+  if (!unsigned || !unsigned.startsWith("u:")) return null;
+  const [, userIdStr, expiresAtStr] = unsigned.split(":");
+  const userId = Number(userIdStr);
+  const expiresAt = Number(expiresAtStr);
+  if (!Number.isFinite(userId) || !Number.isFinite(expiresAt)) return null;
+  if (Date.now() >= expiresAt) return null;
+  return userId;
+}
+
+/** Vérifie juste la validité du cookie, sans avoir besoin de l'userId (proxy.ts). */
+export async function isSessionValid(cookieValue: string | undefined): Promise<boolean> {
+  return (await getSessionUserId(cookieValue)) !== null;
 }

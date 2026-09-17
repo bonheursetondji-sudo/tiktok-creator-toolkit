@@ -9,22 +9,23 @@ export default function TermsPage() {
 
         <div className="mt-8 space-y-6 text-sm leading-relaxed text-ink">
           <p>
-            TikTok Creator Toolkit est un outil personnel, développé et utilisé par un seul
-            créateur de contenu pour son propre usage. Il n&rsquo;est pas un service public ni
-            commercial, et n&rsquo;est ouvert à aucun autre utilisateur que son propriétaire.
+            TikTok Creator Toolkit est un outil à usage restreint, réservé à un petit nombre de
+            personnes explicitement invitées par son administrateur (pas d&rsquo;inscription
+            publique). Ce n&rsquo;est pas un service commercial ; chaque personne invitée dispose
+            de son propre compte et de ses propres données, entièrement séparées des autres.
           </p>
 
           <section>
             <h2 className="font-semibold">Ce que fait l&rsquo;outil</h2>
             <p className="mt-1">
-              L&rsquo;outil permet, pour son unique utilisateur : de récupérer ses propres
-              données publiques TikTok (profil, liste de vidéos, statistiques) via l&rsquo;API
-              officielle TikTok après connexion OAuth ; d&rsquo;estimer son éligibilité à des
-              programmes TikTok sur la base de critères publics ; de générer des idées de
-              contenu via un modèle de langage ; et de tenir une checklist personnelle de
-              préparation. Il ne prétend jamais lire un statut de monétisation officiel ou
-              prédire une décision d&rsquo;attribution de badge — ces informations ne sont pas
-              partagées par TikTok via API publique.
+              Pour chaque personne invitée : récupération de ses propres données publiques
+              TikTok (profil, liste de vidéos, statistiques) via l&rsquo;API officielle TikTok
+              après connexion OAuth ; estimation de son éligibilité à des programmes TikTok sur
+              la base de critères publics ; génération d&rsquo;idées de contenu via un modèle de
+              langage ; tenue d&rsquo;une checklist personnelle de préparation. Il ne prétend
+              jamais lire un statut de monétisation officiel ou prédire une décision
+              d&rsquo;attribution de badge — ces informations ne sont pas partagées par TikTok
+              via API publique.
             </p>
           </section>
 

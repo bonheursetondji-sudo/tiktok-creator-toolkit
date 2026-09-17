@@ -3,6 +3,7 @@ import { exchangeCodeForToken, fetchUserInfo } from "@/lib/tiktok";
 import { unsign } from "@/lib/session";
 import { encrypt } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { OAUTH_STATE_COOKIE } from "../authorize/route";
 
 function redirectWithError(request: NextRequest, message: string) {
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "Session OAuth expirée, réessayez la connexion.");
   }
 
-  let saved: { state: string; verifier: string };
+  let saved: { state: string; verifier: string; userId: number };
   try {
     saved = JSON.parse(unsigned);
   } catch {
@@ -41,11 +42,30 @@ export async function GET(request: NextRequest) {
     return redirectWithError(request, "Paramètre state invalide (protection anti-CSRF).");
   }
 
+  // Toujours connecté, et toujours la même personne qui a démarré le flux
+  // (défense en profondeur, en plus de la vérification du state).
+  const currentUser = await getCurrentUser();
+  if (!currentUser || currentUser.id !== saved.userId) {
+    return redirectWithError(request, "Session expirée pendant la connexion, réessayez.");
+  }
+
   try {
     const token = await exchangeCodeForToken(code, saved.verifier);
     const userInfo = await fetchUserInfo(token.access_token);
 
-    const existing = await prisma.profil.findUnique({ where: { tiktokUserId: token.open_id } });
+    // Ce compte TikTok est-il déjà rattaché à un autre utilisateur de
+    // l'outil ? (tiktokUserId est unique en base — deux personnes ne
+    // peuvent pas connecter le même compte TikTok).
+    const existingForOtherUser = await prisma.profil.findUnique({
+      where: { tiktokUserId: token.open_id },
+    });
+    if (existingForOtherUser && existingForOtherUser.userId !== currentUser.id) {
+      return redirectWithError(
+        request,
+        "Ce compte TikTok est déjà connecté à un autre utilisateur de l'outil."
+      );
+    }
+
     const data = {
       displayName: userInfo.display_name ?? null,
       followerCount: userInfo.follower_count ?? null,
@@ -55,11 +75,11 @@ export async function GET(request: NextRequest) {
       lastSyncAt: new Date(),
     };
 
-    if (existing) {
-      await prisma.profil.update({ where: { id: existing.id }, data });
-    } else {
-      await prisma.profil.create({ data: { tiktokUserId: token.open_id, ...data } });
-    }
+    await prisma.profil.upsert({
+      where: { userId: currentUser.id },
+      create: { userId: currentUser.id, tiktokUserId: token.open_id, ...data },
+      update: { tiktokUserId: token.open_id, ...data },
+    });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Échec de la connexion TikTok.";
     return redirectWithError(request, message);

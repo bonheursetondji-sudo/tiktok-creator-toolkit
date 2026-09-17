@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { computeMonetization } from "@/lib/monetization";
+import { getCurrentUser } from "@/lib/current-user";
 
 interface RouteParams {
   params: Promise<{ id: string }>;
@@ -15,10 +16,13 @@ const DECLARATIVE_FIELDS = [
 ] as const;
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+
   const { id: idParam } = await params;
   const id = Number(idParam);
   const existing = await prisma.video.findUnique({ where: { id } });
-  if (!existing) {
+  if (!existing || existing.userId !== user.id) {
     return NextResponse.json({ error: "Vidéo introuvable." }, { status: 404 });
   }
 
@@ -47,8 +51,16 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 }
 
 export async function DELETE(_request: NextRequest, { params }: RouteParams) {
+  const user = await getCurrentUser();
+  if (!user) return NextResponse.json({ error: "Non authentifié." }, { status: 401 });
+
   const { id: idParam } = await params;
   const id = Number(idParam);
+  const existing = await prisma.video.findUnique({ where: { id } });
+  if (!existing || existing.userId !== user.id) {
+    return NextResponse.json({ error: "Vidéo introuvable." }, { status: 404 });
+  }
+
   await prisma.video.delete({ where: { id } }).catch(() => null);
   return NextResponse.json({ ok: true });
 }

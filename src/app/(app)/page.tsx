@@ -1,10 +1,12 @@
 import Link from "next/link";
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 
 export const dynamic = "force-dynamic";
 
 export default async function DashboardPage() {
-  const profil = await prisma.profil.findFirst({ orderBy: { updatedAt: "desc" } });
+  const user = await getCurrentUser();
+  const profil = user ? await prisma.profil.findUnique({ where: { userId: user.id } }) : null;
 
   const cards = [
     {

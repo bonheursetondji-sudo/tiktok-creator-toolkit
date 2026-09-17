@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { SyncButton } from "@/components/SyncButton";
 
 export const dynamic = "force-dynamic";
@@ -9,7 +10,8 @@ export default async function ConnexionTikTokPage({
   searchParams: Promise<{ connected?: string; error?: string }>;
 }) {
   const { connected, error } = await searchParams;
-  const profil = await prisma.profil.findFirst({ orderBy: { updatedAt: "desc" } });
+  const user = await getCurrentUser();
+  const profil = user ? await prisma.profil.findUnique({ where: { userId: user.id } }) : null;
 
   return (
     <div>

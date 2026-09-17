@@ -1,10 +1,18 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { IdeesGenerator } from "@/components/IdeesGenerator";
 
 export const dynamic = "force-dynamic";
 
 export default async function IdeesPage() {
-  const history = await prisma.ideeContenu.findMany({ orderBy: { createdAt: "desc" }, take: 50 });
+  const user = await getCurrentUser();
+  const history = user
+    ? await prisma.ideeContenu.findMany({
+        where: { userId: user.id },
+        orderBy: { createdAt: "desc" },
+        take: 50,
+      })
+    : [];
   const serialized = history.map((i) => ({ ...i, createdAt: i.createdAt.toISOString() }));
 
   return (

@@ -1,10 +1,12 @@
 import { prisma } from "@/lib/db";
+import { getCurrentUser } from "@/lib/current-user";
 import { EligibiliteForm } from "@/components/EligibiliteForm";
 
 export const dynamic = "force-dynamic";
 
 export default async function EligibilitePage() {
-  const profil = await prisma.profil.findFirst({ orderBy: { updatedAt: "desc" } });
+  const user = await getCurrentUser();
+  const profil = user ? await prisma.profil.findUnique({ where: { userId: user.id } }) : null;
 
   return (
     <div>
